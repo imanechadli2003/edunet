@@ -19,17 +19,38 @@ public class Topic {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(unique = true)
     private String name;
 
     private String description;
+
+    @Enumerated
+    @Column(columnDefinition = "smallint", nullable = false)
+    private Privacy privacy = Privacy.PRIVATE;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
+    @Enumerated
+    @Column(columnDefinition = "smallint", nullable = false)
+    private TopicType type = TopicType.CREATED_TOPIC;
+
     @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY)
     private List<Post> posts;
 
-    @Column(name = "created_on")
+    @Column(name = "created_on", nullable = false)
     private LocalDate createdOn;
+
+    @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY)
+    private List<TopicMembership> members;
+
+
+    public enum Privacy {
+        PUBLIC, PRIVATE
+    }
+
+    public enum TopicType {
+        CREATED_TOPIC, USER_TOPIC
+    }
 }

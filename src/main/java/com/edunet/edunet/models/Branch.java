@@ -16,8 +16,8 @@ public class Branch {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "branch_name")
-    private String branchName;
+    @Column(unique = true, nullable = false)
+    private String name;
 
     private String description;
 }

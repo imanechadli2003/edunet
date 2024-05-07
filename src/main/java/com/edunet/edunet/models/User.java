@@ -1,5 +1,6 @@
 package com.edunet.edunet.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,31 +20,68 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "first_name")
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name = "last_name")
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
+    @Column(unique = true, nullable = false)
     private String handle;
+
+    @Enumerated
+    @Column(columnDefinition = "smallint")
+    private Gender gender;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "branch_id")
     private Branch branch;
 
+    @Column(nullable = false)
+    private String title;
+
+    @Column(unique = true)
     private String email;
 
+    @JsonIgnore
+    @Column(nullable = false)
     private String password;
 
-    private String country;
+    private String country = "French";
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
-    private Set<Topic> topics;
+    private Set<Topic> ownedTopics;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<TopicMembership> memberships;
 
     @Column(name = "created_on")
     private LocalDate createdOn;
+
+    public enum Gender {
+        FEMALE(0), MALE(1);
+
+        private final int val;
+
+        Gender(int val) {
+            this.val = val;
+        }
+
+        public int val() {
+            return val;
+        }
+
+        public static Gender fromInt(int val) {
+            for (Gender gender: Gender.values()) {
+                if (gender.val() == val) {
+                    return gender;
+                }
+            }
+            throw new IllegalArgumentException("Gender must be either 0 for female or 1 for male");
+        }
+    }
 }
