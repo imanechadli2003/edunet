@@ -1,16 +1,15 @@
 package com.edunet.edunet;
 
-import com.edunet.edunet.models.Branch;
-import com.edunet.edunet.models.Role;
-import com.edunet.edunet.models.Topic;
-import com.edunet.edunet.models.User;
+import com.edunet.edunet.model.Branch;
+import com.edunet.edunet.model.Role;
+import com.edunet.edunet.model.Topic;
+import com.edunet.edunet.model.User;
 import com.edunet.edunet.repository.BranchRepository;
 import com.edunet.edunet.repository.RoleRepository;
 import com.edunet.edunet.repository.TopicRepository;
 import com.edunet.edunet.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +30,6 @@ public class DataLoader implements CommandLineRunner {
     private final BranchRepository branchRepository;
 
     @Override
-    @DependsOn("dataSourceInitializer")
     public void run(String... args) throws Exception {
 
         roleRepository.save(new Role(0, "ROLE_ADMIN", "Platform admin"));

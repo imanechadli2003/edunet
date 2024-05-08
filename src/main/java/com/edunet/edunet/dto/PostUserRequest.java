@@ -1,10 +1,9 @@
 package com.edunet.edunet.dto;
 
-import com.edunet.edunet.models.User;
-
-public record CreateUserRequest(
+public record PostUserRequest(
         String firstName,
         String lastName,
+        String handle,
         int gender,
         String branch,
         String title,

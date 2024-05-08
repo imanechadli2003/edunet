@@ -1,15 +1,18 @@
 package com.edunet.edunet.controller;
 
-import com.edunet.edunet.dto.CreateUserRequest;
-import com.edunet.edunet.models.User;
+import com.edunet.edunet.dto.Login;
+import com.edunet.edunet.dto.PostUserRequest;
+import com.edunet.edunet.dto.GetUserRequest;
+import com.edunet.edunet.dto.UpdatePasswordRequest;
+import com.edunet.edunet.model.User;
 import com.edunet.edunet.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping(value = "/users", produces = "application/json")
@@ -18,40 +21,51 @@ public class UserController {
 
     private UserService userService;
 
-
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable Integer id) {
-        Optional<User> user =  userService.findUserById(id);
-        return user.orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
+    public GetUserRequest getUser(@PathVariable Integer id) {
+        return userService.findUserById(id).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not fouuuuuuuund")
         );
     }
 
     @PostMapping("/signup")
-    public void createNewUser(@RequestBody CreateUserRequest userRequest) {
-        userService.save(userRequest);
+    public void createNewUser(@RequestBody PostUserRequest data) {
+        userService.save(data);
     }
 
     @GetMapping("/all")
-    public List<User> getAllUsers() {
-        // TODO
-        return null;
+    public List<GetUserRequest> getAllUsers() {
+        return userService.getAllUsers();
     }
 
     @PostMapping("/{id}")
-    public User updateUser(@PathVariable int id) {
-        // TODO
-        return null;
+    public void updateUser(@PathVariable int id, @RequestBody PostUserRequest data) {
+        userService.updateUser(id, data);
     }
 
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable int id) {
-        // TODO
+        userService.deleteUser(id);
     }
 
     @GetMapping("/search")
     public List<User> search() {
         // TODO
-        return null;
+        return Collections.emptyList();
+    }
+
+    @PostMapping("/update-password/{id}")
+    public void updatePassword(@PathVariable int id, @RequestBody UpdatePasswordRequest password) {
+        userService.updatePassword(id, password);
+    }
+
+    @PostMapping("/login")
+    public void login(@RequestBody Login login) {
+        // TODO
+    }
+
+    @GetMapping("/logout")
+    public void logout() {
+        // TODO
     }
 }

@@ -1,7 +1,7 @@
 package com.edunet.edunet.service;
 
 
-import com.edunet.edunet.models.Branch;
+import com.edunet.edunet.model.Branch;
 import com.edunet.edunet.repository.BranchRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;

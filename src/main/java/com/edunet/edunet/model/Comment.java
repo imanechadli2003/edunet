@@ -1,4 +1,4 @@
-package com.edunet.edunet.models;
+package com.edunet.edunet.model;
 
 
 import jakarta.persistence.*;
