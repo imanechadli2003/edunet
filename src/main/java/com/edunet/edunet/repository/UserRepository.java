@@ -2,7 +2,10 @@ package com.edunet.edunet.repository;
 
 import com.edunet.edunet.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -12,4 +15,18 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     Optional<User> findUserById(Integer id);
 
     boolean existsByHandle(String handle);
+
+    Optional<User> findUserByHandle(String handle);
+
+    @Query("SELECT u.password FROM User u WHERE u.id = :id")
+    Optional<String> findPasswordById(int id);
+
+    @Query("SELECT u.password FROM User u WHERE u.handle = :handle")
+    Optional<String> findPasswordByHandle(String handle);
+
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.password = :newPassword WHERE u.id = :id")
+    void updatePassword(Integer id, String newPassword);
 }

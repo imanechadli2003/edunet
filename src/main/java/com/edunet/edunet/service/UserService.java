@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -38,7 +37,7 @@ public class UserService {
     public void save(PostUserRequest data) {
         User user = UserService.postUserRequestToUser(data);
         if (userRepository.existsByHandle(user.getHandle())) {
-            throw new IllegalArgumentException("handle already exist");
+            throw new IllegalArgumentException("Handle already exist");
         }
         Optional<Branch> branch = branchService.getBranch(data.branch());
         user.setBranch(branch.orElseThrow(() -> new IllegalArgumentException("Unknown branch name" + data.branch())));
@@ -53,7 +52,7 @@ public class UserService {
     public List<GetUserRequest> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(UserService::userToGetUserRequest)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public void updateUser(int id, PostUserRequest data) {
@@ -62,7 +61,7 @@ public class UserService {
         }
         User user = postUserRequestToUser(data);
         if (userRepository.existsByHandle(user.getHandle())) {
-            throw new IllegalArgumentException("handle already exist");
+            throw new IllegalArgumentException("Handle already exist");
         }
         Optional<Branch> branch = branchService.getBranch(data.branch());
         user.setBranch(branch.orElseThrow(() -> new IllegalArgumentException("Unknown branch name" + data.branch())));
@@ -75,6 +74,21 @@ public class UserService {
             throw new IllegalArgumentException("User not found");
         }
         userRepository.deleteById(id);
+    }
+
+    public void updatePassword(int id, UpdatePasswordRequest password) {
+        String oldPassword = userRepository.findPasswordById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        String oldPasswordProvided = passwordEncoder.encode(password.oldPassword());
+        if (!oldPasswordProvided.equals(oldPassword)) {
+            throw new IllegalArgumentException("Incorrect password");
+        }
+        // TODO - Validate the new password
+        if (!password.newPassword().equals(password.confirmPassword())) {
+            throw new IllegalArgumentException("Password doesn't match");
+        }
+        String encodedNewPassword = passwordEncoder.encode(password.newPassword());
+        userRepository.updatePassword(id, encodedNewPassword);
     }
 
     /**
@@ -104,18 +118,5 @@ public class UserService {
                 u.getTitle(),
                 u.getCreatedOn()
         );
-    }
-
-    public void updatePassword(int id, UpdatePasswordRequest password) {
-        if (!userRepository.existsById(id)) {
-            throw new IllegalArgumentException("User not found");
-        }
-        if (!password.newPassword().equals(password.confirmPassword())) {
-            throw new IllegalArgumentException("Password doesn't match");
-        }
-        // TODO - Check old password
-        // TODO - Validate new password
-        // TODO - Update password
-
     }
 }

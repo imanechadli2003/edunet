@@ -47,7 +47,26 @@ public class Topic {
 
 
     public enum Privacy {
-        PUBLIC, PRIVATE
+        PRIVATE(0), PUBLIC(1);
+
+        private final int val;
+
+        Privacy(int val) {
+            this.val = val;
+        }
+
+        public int val() {
+            return val;
+        }
+
+        public static Privacy fromInt(int val) {
+            for (Privacy item: Privacy.values()) {
+                if (val == item.val()) {
+                    return item;
+                }
+            }
+            throw new IllegalArgumentException("Invalid value");
+        }
     }
 
     public enum TopicType {

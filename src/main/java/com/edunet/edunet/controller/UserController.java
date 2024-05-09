@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 
 @RestController
-@RequestMapping(value = "/users", produces = "application/json")
+@RequestMapping(value = "/api/users", produces = "application/json")
 @AllArgsConstructor
 public class UserController {
 
