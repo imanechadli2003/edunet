@@ -45,6 +45,9 @@ public class Topic {
     @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY)
     private List<TopicMembership> members;
 
+    public Topic(int id) {
+        this.id = id;
+    }
 
     public enum Privacy {
         PRIVATE(0), PUBLIC(1);

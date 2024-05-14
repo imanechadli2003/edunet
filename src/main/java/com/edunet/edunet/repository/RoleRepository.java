@@ -8,6 +8,6 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
     Role getRoleByName(String name);
 
     default Role getDefaultRole() {
-        return getRoleByName("ROLE_USER");
+        return getRoleByName("user");
     }
 }

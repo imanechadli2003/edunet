@@ -18,7 +18,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -36,6 +36,8 @@ public class User {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "branch_id")
     private Branch branch;
+
+    // TODO - Add promo info and student status
 
     @Column(nullable = false)
     private String title;
@@ -61,6 +63,10 @@ public class User {
 
     @Column(name = "created_on")
     private LocalDate createdOn;
+
+    public User(long id) {
+        this.id = id;
+    }
 
     public enum Gender {
         FEMALE(0), MALE(1);

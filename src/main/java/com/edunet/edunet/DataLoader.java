@@ -32,9 +32,9 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        roleRepository.save(new Role(0, "ROLE_ADMIN", "Platform admin"));
-        roleRepository.save(new Role(0, "ROLE_MODERATOR", "Platform content and user management"));
-        roleRepository.save(new Role(0, "ROLE_USER", "Students and visitors"));
+        roleRepository.save(new Role(0, "admin", "Platform admin"));
+        roleRepository.save(new Role(0, "manager", "Platform content and user management"));
+        roleRepository.save(new Role(0, "user", "Students and visitors"));
 
         branchRepository.save(new Branch(0, "Software Engineering", ""));
         branchRepository.save(new Branch(0, "Network Engineering", ""));
@@ -46,7 +46,7 @@ public class DataLoader implements CommandLineRunner {
         admin.setTitle("Admin");
         admin.setFirstName("Admin");
         admin.setLastName("Admin");
-        Role role = roleRepository.getRoleByName("ROLE_ADMIN");
+        Role role = roleRepository.getRoleByName("admin");
         admin.setRole(role);
         admin.setHandle("admin");
         admin.setPassword(passwordEncoder.encode("admin"));

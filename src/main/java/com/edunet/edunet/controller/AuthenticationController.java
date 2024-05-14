@@ -18,7 +18,6 @@ public class AuthenticationController {
 
     @PostMapping("/token")
     public String getToken(@RequestBody Login credentials) {
-        System.out.println("Login request");
         return authService.getToken(credentials);
     }
 }

@@ -39,15 +39,11 @@ public class SecurityConfig {
                         request -> request
                                 .requestMatchers("/api/auth/token").permitAll()
                                 .requestMatchers("/api/users/signup").permitAll()
+                                .requestMatchers("/api/admin/**").hasAuthority("SCOPE_admin")
                                 .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(server -> server.jwt(Customizer.withDefaults()));
         return http.build();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        return http.getSharedObject(AuthenticationManagerBuilder.class).build();
     }
 
     @Bean

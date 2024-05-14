@@ -1,6 +1,7 @@
 package com.edunet.edunet.repository;
 
 import com.edunet.edunet.model.User;
+import com.edunet.edunet.repository.projections.Credentials;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,16 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Integer> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findUserById(Integer id);
+    Optional<User> findUserById(Long id);
 
     boolean existsByHandle(String handle);
 
     Optional<User> findUserByHandle(String handle);
 
     @Query("SELECT u.password FROM User u WHERE u.id = :id")
-    Optional<String> findPasswordById(int id);
+    Optional<String> findPasswordById(Long id);
 
     @Query("SELECT u.password FROM User u WHERE u.handle = :handle")
     Optional<String> findPasswordByHandle(String handle);
@@ -28,5 +29,11 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.password = :newPassword WHERE u.id = :id")
-    void updatePassword(Integer id, String newPassword);
+    void updatePassword(Long id, String newPassword);
+
+
+    @Query("SELECT u.id FROM User u WHERE u.handle = :handle")
+    Optional<Long> findIdByHandle(String handle);
+
+    Optional<Credentials> findByHandle(String handle);
 }

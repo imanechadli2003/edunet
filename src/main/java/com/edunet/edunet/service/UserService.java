@@ -29,7 +29,7 @@ public class UserService {
 
     private final BranchService branchService;
 
-    public Optional<GetUserRequest> findUserById(int id) {
+    public Optional<GetUserRequest> findUserById(Long id) {
         Optional<User> user = userRepository.findUserById(id);
         return user.map(UserService::userToGetUserRequest);
     }
@@ -55,7 +55,7 @@ public class UserService {
                 .toList();
     }
 
-    public void updateUser(int id, PostUserRequest data) {
+    public void updateUser(Long id, PostUserRequest data) {
         if (!userRepository.existsById(id)) {
             throw new IllegalArgumentException("User not found");
         }
@@ -69,14 +69,14 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void deleteUser(int id) {
+    public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new IllegalArgumentException("User not found");
         }
         userRepository.deleteById(id);
     }
 
-    public void updatePassword(int id, UpdatePasswordRequest password) {
+    public void updatePassword(Long id, UpdatePasswordRequest password) {
         String oldPassword = userRepository.findPasswordById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         String oldPasswordProvided = passwordEncoder.encode(password.oldPassword());

@@ -8,6 +8,8 @@ import com.edunet.edunet.model.User;
 import com.edunet.edunet.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,7 +24,7 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/{id}")
-    public GetUserRequest getUser(@PathVariable Integer id) {
+    public GetUserRequest getUser(@PathVariable Long id) {
         return userService.findUserById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not fouuuuuuuund")
         );
@@ -35,16 +37,17 @@ public class UserController {
 
     @GetMapping("/all")
     public List<GetUserRequest> getAllUsers() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return userService.getAllUsers();
     }
 
     @PostMapping("/{id}")
-    public void updateUser(@PathVariable int id, @RequestBody PostUserRequest data) {
+    public void updateUser(@PathVariable Long id, @RequestBody PostUserRequest data) {
         userService.updateUser(id, data);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable int id) {
+    public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }
 
@@ -55,7 +58,7 @@ public class UserController {
     }
 
     @PostMapping("/update-password/{id}")
-    public void updatePassword(@PathVariable int id, @RequestBody UpdatePasswordRequest password) {
+    public void updatePassword(@PathVariable Long id, @RequestBody UpdatePasswordRequest password) {
         userService.updatePassword(id, password);
     }
 
