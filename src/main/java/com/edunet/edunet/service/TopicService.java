@@ -1,9 +1,13 @@
 package com.edunet.edunet.service;
 
 import com.edunet.edunet.dto.GetTopicRequest;
-import com.edunet.edunet.dto.MembershipRequest;
 import com.edunet.edunet.dto.MembershipRequestResponse;
 import com.edunet.edunet.dto.PostTopicRequest;
+import com.edunet.edunet.dto.UserIdHandle;
+import com.edunet.edunet.exception.ApplicationError;
+import com.edunet.edunet.exception.BadRequestException;
+import com.edunet.edunet.exception.NotAllowedException;
+import com.edunet.edunet.exception.ResourceNotFoundException;
 import com.edunet.edunet.model.Topic;
 import com.edunet.edunet.model.TopicMembership;
 import com.edunet.edunet.model.TopicMembershipRequest;
@@ -12,13 +16,13 @@ import com.edunet.edunet.repository.MembershipRepository;
 import com.edunet.edunet.repository.MembershipRequestRepository;
 import com.edunet.edunet.repository.TopicRepository;
 import com.edunet.edunet.repository.UserRepository;
+import com.edunet.edunet.security.AuthenticationService;
+import static com.edunet.edunet.model.TopicMembership.*;
 import lombok.AllArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -32,52 +36,41 @@ public class TopicService {
 
     private final MembershipRepository topicMembershipRepository;
 
+    private final AuthenticationService authService;
+
     public GetTopicRequest createTopic(PostTopicRequest data) {
-        // TODO - Reiterate
         Topic topic = new Topic();
         topic.setName(data.name());
         topic.setDescription(data.description());
         topic.setPrivacy(Topic.Privacy.fromInt(data.privacy()));
-        String ownerHandle = SecurityContextHolder.getContext().getAuthentication().getName();
-        User owner = userRepository.findUserByHandle(ownerHandle).get();
-        topic.setOwner(owner);
+        topic.setOwner(new User(authService.getAuthenticatedUserId()));
         topic.setCreatedOn(LocalDate.now());
         topicRepository.save(topic);
         return TopicService.topicToGetTopicRequest(topic);
     }
 
-    public Optional<GetTopicRequest> getTopic(int id) {
-        Optional<Topic> topic = topicRepository.findById(id);
-        if (topic.isEmpty()) {
-            throw new IllegalArgumentException("Topic not found");
-        }
-        return topic.map(TopicService::topicToGetTopicRequest);
+    public GetTopicRequest getTopic(int id) {
+        Topic topic = topicRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("topic " + id));
+        return topicToGetTopicRequest(topic);
     }
 
     public void deleteTopic(int id) {
-        Optional<String> ownerHandle = topicRepository.findHandleOfOwner(id);
-        if (ownerHandle.isEmpty()) {
-            throw new IllegalArgumentException("Topic not found");
-        }
-        String authHandle = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (!ownerHandle.get().equals(authHandle)) {
-            throw new IllegalArgumentException("Not an owner of the resource");
-        }
+        checkIfAuthenticatedUserIsOwner(id);
         topicRepository.deleteById(id);
     }
 
     public GetTopicRequest updateTopic(int id, PostTopicRequest data) {
-        Topic topic = topicRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
+        Topic topic = getTopicIfAuthenticatedIsOwner(id);
         topicRepository.save(postTopicRequestToRequest(topic, data));
         return topicToGetTopicRequest(topic);
     }
 
-    public void addMembershipRequest(MembershipRequest data) {
-        Topic topic = topicRepository.findTopicByName(data.topicName())
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
-        User user = userRepository.findUserByHandle(data.handle())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    public void addMembershipRequest(int topicId) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new ResourceNotFoundException("topic " + topicId));
+        User user = userRepository.findUserById(authService.getAuthenticatedUserId())
+                .orElseThrow(() -> new ApplicationError("unexpected error"));
         TopicMembershipRequest request = new TopicMembershipRequest();
         request.setTopic(topic);
         request.setUser(user);
@@ -85,40 +78,32 @@ public class TopicService {
     }
 
     public void respondToMembershipRequest(MembershipRequestResponse data) {
-        // TODO - Reiterate
         TopicMembershipRequest request = membershipRequestRepository.findById(data.requestId())
-                .orElseThrow(() -> new IllegalArgumentException("Request not found"));
-        String authHandle = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (!authHandle.equals(request.getTopic().getOwner().getHandle())) {
-            throw new IllegalArgumentException("not authorized to modify this request");
-        }
+                .orElseThrow(() -> new ResourceNotFoundException("request " + data.requestId()));
+        checkIfAuthenticatedUserIsOwner(request.getTopic().getId());
         if (data.accepted()) {
             TopicMembership membership = new TopicMembership();
             membership.setTopic(request.getTopic());
             membership.setUser(request.getUser());
-            membership.setPermission(TopicMembership.Permission.fromInt(data.permission()));
+            int val = data.permission();
+            if (!Permission.isValid(val)) {
+                throw new BadRequestException("invalid permission value:" + val);
+            }
+            Permission permission = Permission.fromInt(val);
+            membership.setPermission(permission);
             topicMembershipRepository.save(membership);
         }
         membershipRequestRepository.delete(request);
     }
 
-    public List<MembershipRequest> getAllRequests(int id) {
-        // TODO - Reiterate
+    public List<UserIdHandle> getAllRequests(int id) {
         Topic topic = topicRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
-        String authHandle = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (!authHandle.equals(topic.getOwner().getHandle())) {
-            throw new IllegalArgumentException("Not authorized to see this information");
+                .orElseThrow(() -> new ResourceNotFoundException("topic " + id));
+        if (authService.getAuthenticatedUserId() != topic.getOwner().getId()) {
+            throw new NotAllowedException("not enough permissions");
         }
         return membershipRequestRepository.findHandlesByTopicId(id).stream()
-                .map(handle -> new MembershipRequest(topic.getName(), handle))
-                .toList();
-    }
-
-    public List<GetTopicRequest> getAllTopics() {
-        // TODO - Which topics to show
-        return topicRepository.findAll().stream()
-                .map(TopicService::topicToGetTopicRequest)
+                .map(handle -> new UserIdHandle(null, handle))
                 .toList();
     }
 
@@ -135,5 +120,24 @@ public class TopicService {
                 topic.getPrivacy().name(),
                 topic.getOwner().getHandle(),
                 topic.getCreatedOn());
+    }
+
+    private void checkIfAuthenticatedUserIsOwner(int topicId) {
+        long ownerId = topicRepository.findOwnerIdById(topicId)
+                .orElseThrow(() -> new ResourceNotFoundException("topic: " + topicId));
+        long authId = authService.getAuthenticatedUserId();
+        if (authId != ownerId) {
+            throw new NotAllowedException("not enough permissions");
+        }
+    }
+
+    private Topic getTopicIfAuthenticatedIsOwner(int topicId) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new ResourceNotFoundException("topic: " + topicId));
+        long authId = authService.getAuthenticatedUserId();
+        if (authId != topic.getOwner().getId()) {
+            throw new NotAllowedException("not enough permissions");
+        }
+        return topic;
     }
 }

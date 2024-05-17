@@ -17,6 +17,9 @@ public interface TopicRepository extends JpaRepository<Topic, Integer> {
     @Query("SELECT t.owner.handle FROM Topic t WHERE t.id = :id")
     Optional<String> findHandleOfOwner(int id);
 
+    @Query("SELECT t.owner.id FROM Topic t WHERE t.id = :id")
+    Optional<Long> findOwnerIdById(int id);
+
     Optional<Topic> findTopicByName(String name);
 
     @Query("SELECT t.name FROM Topic t WHERE t.id = :id")

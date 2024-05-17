@@ -1,4 +1,4 @@
-package com.edunet.edunet.controller;
+package com.edunet.edunet.endpoint;
 
 import com.edunet.edunet.dto.Login;
 import com.edunet.edunet.dto.PostUserRequest;
@@ -7,11 +7,9 @@ import com.edunet.edunet.dto.UpdatePasswordRequest;
 import com.edunet.edunet.model.User;
 import com.edunet.edunet.service.UserService;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,9 +23,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public GetUserRequest getUser(@PathVariable Long id) {
-        return userService.findUserById(id).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not fouuuuuuuund")
-        );
+        return userService.findUserById(id);
     }
 
     @PostMapping("/signup")

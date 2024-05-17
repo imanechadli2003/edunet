@@ -1,5 +1,6 @@
 package com.edunet.edunet.repository;
 
+import com.edunet.edunet.model.Role;
 import com.edunet.edunet.model.User;
 import com.edunet.edunet.repository.projections.Credentials;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,10 +23,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u.password FROM User u WHERE u.id = :id")
     Optional<String> findPasswordById(Long id);
 
-    @Query("SELECT u.password FROM User u WHERE u.handle = :handle")
-    Optional<String> findPasswordByHandle(String handle);
-
-
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.password = :newPassword WHERE u.id = :id")
@@ -36,4 +33,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<Long> findIdByHandle(String handle);
 
     Optional<Credentials> findByHandle(String handle);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE User u SET u.role = :role WHERE u.id = :id")
+    void updateRoleById(long id, Role role);
 }

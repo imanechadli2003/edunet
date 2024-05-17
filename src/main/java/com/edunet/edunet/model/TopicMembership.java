@@ -38,13 +38,19 @@ public class TopicMembership {
         COMMENT(1),
         // COMMENT + can write posts
         WRITE(2),
-        // WRITE + can update user memberships
-        OWNER(3);
+        //WRITE + manage members & content of other members
+        MODERATOR(3),
+        // MODERATOR + can upgrade/downgrade moderators + delete this topic
+        OWNER(4);
 
         private final int val;
 
         Permission(int val) {
             this.val = val;
+        }
+
+        public static boolean isValid(int val) {
+            return val >= 0 && val <= 4;
         }
 
         public int val() {

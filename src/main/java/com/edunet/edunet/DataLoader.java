@@ -30,7 +30,7 @@ public class DataLoader implements CommandLineRunner {
     private final BranchRepository branchRepository;
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
 
         roleRepository.save(new Role(0, "admin", "Platform admin"));
         roleRepository.save(new Role(0, "manager", "Platform content and user management"));

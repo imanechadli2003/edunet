@@ -43,4 +43,8 @@ public class Post {
 
     @Column(name = "created_on")
     private LocalDateTime createdOn;
+
+    public Post(int id) {
+        this.id = id;
+    }
 }

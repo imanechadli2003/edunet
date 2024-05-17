@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 
@@ -21,5 +23,14 @@ public class AuthenticationService {
         var authToken = new UsernamePasswordAuthenticationToken(credentials.handle(), credentials.password());
         Authentication auth = authenticationManager.authenticate(authToken);
         return jwtTokenService.generateToken(auth);
+    }
+
+    public long getAuthenticatedUserId() {
+        Jwt jwt = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return jwt.getClaim("userId");
+    }
+
+    public String getAuthenticatedUserHandle() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 }

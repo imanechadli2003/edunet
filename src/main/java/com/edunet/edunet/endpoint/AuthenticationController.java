@@ -1,4 +1,4 @@
-package com.edunet.edunet.controller;
+package com.edunet.edunet.endpoint;
 
 
 import com.edunet.edunet.dto.Login;

@@ -40,6 +40,7 @@ public class SecurityConfig {
                                 .requestMatchers("/api/auth/token").permitAll()
                                 .requestMatchers("/api/users/signup").permitAll()
                                 .requestMatchers("/api/admin/**").hasAuthority("SCOPE_admin")
+                                .requestMatchers("/api/management/**").hasAuthority("SCOPE_manager")
                                 .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(server -> server.jwt(Customizer.withDefaults()));
