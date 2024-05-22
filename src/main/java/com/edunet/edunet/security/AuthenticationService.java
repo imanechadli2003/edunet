@@ -1,6 +1,7 @@
 package com.edunet.edunet.security;
 
 
+import com.edunet.edunet.dto.AuthToken;
 import com.edunet.edunet.dto.Login;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,10 +20,15 @@ public class AuthenticationService {
 
     private final JwtTokenService jwtTokenService;
 
-    public String getToken(Login credentials) {
+    public AuthToken getToken(Login credentials) {
         var authToken = new UsernamePasswordAuthenticationToken(credentials.handle(), credentials.password());
         Authentication auth = authenticationManager.authenticate(authToken);
-        return jwtTokenService.generateToken(auth);
+        String jwtToken = jwtTokenService.generateToken(auth);
+        return new AuthToken(
+                ((AuthenticationImpl) auth).details().id(),
+                auth.getName(),
+                jwtToken
+        );
     }
 
     public long getAuthenticatedUserId() {

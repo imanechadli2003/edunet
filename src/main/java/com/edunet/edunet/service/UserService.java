@@ -1,18 +1,21 @@
 package com.edunet.edunet.service;
 
+import com.edunet.edunet.dto.AuthToken;
 import com.edunet.edunet.dto.PostUserRequest;
 import com.edunet.edunet.dto.GetUserRequest;
 import com.edunet.edunet.dto.UpdatePasswordRequest;
 import com.edunet.edunet.exception.*;
 import com.edunet.edunet.model.Branch;
+import com.edunet.edunet.model.Topic;
+import com.edunet.edunet.model.TopicMembership;
 import com.edunet.edunet.model.User;
-import com.edunet.edunet.repository.RoleRepository;
-import com.edunet.edunet.repository.UserRepository;
+import com.edunet.edunet.repository.*;
 import com.edunet.edunet.security.AuthenticationService;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,28 +31,62 @@ public class UserService {
 
     private final AuthenticationService authService;
 
-    private final BranchService branchService;
+    private final BranchRepository branchRepository;
 
-    public GetUserRequest findUserById(Long id) {
+    private final TopicRepository topicRepository;
+
+    private MembershipRepository membershipRepository;
+
+    private final Clock clock;
+
+    public GetUserRequest getUserById(Long id) {
         User user = userRepository.findUserById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("user " + id));
         return userToGetUserRequest(user);
     }
 
-    public void save(PostUserRequest data) {
+    public GetUserRequest save(PostUserRequest data) {
+        LocalDate now = LocalDate.now(clock);
         User user = UserService.postUserRequestToUser(data);
         if (userRepository.existsByHandle(user.getHandle())) {
             throw new HandleAlreadyExistsException(data.handle());
         }
-        Branch branch = branchService.getBranch(data.branch())
-                .orElseThrow(() -> new BadRequestException("Unknown branch " + data.branch()));
+        Branch branch = branchRepository.findBranchByName(data.branch())
+                .orElseThrow(() -> new ResourceNotFoundException("branch " + data.branch()));
         user.setBranch(branch);
         user.setPassword(passwordEncoder.encode(data.password()));
         user.setRole(roleRepository.getDefaultRole());
-        user.setCreatedOn(LocalDate.now());
-        userRepository.save(user);
+        user.setCreatedOn(now);
+        User savedUser = userRepository.save(user);
+
         // TODO - Verify email
-        // TODO - Create User topic and set permissions
+
+        Topic privateTopic = new Topic();
+        privateTopic.setName("pr" + user.getId());
+        privateTopic.setOwner(user);
+        privateTopic.setPrivacy(Topic.Privacy.PRIVATE);
+        privateTopic.setCreatedOn(now);
+        privateTopic.setType(Topic.TopicType.USER_TOPIC);
+        Topic savedTopic = topicRepository.save(privateTopic);
+        TopicMembership ownership = new TopicMembership();
+        ownership.setPermission(TopicMembership.Permission.OWNER);
+        ownership.setUser(savedUser);
+        ownership.setTopic(savedTopic);
+        membershipRepository.save(ownership);
+
+        Topic publicTopic = new Topic();
+        publicTopic.setName("pu" + user.getId());
+        publicTopic.setOwner(user);
+        publicTopic.setPrivacy(Topic.Privacy.PUBLIC);
+        publicTopic.setCreatedOn(now);
+        publicTopic.setType(Topic.TopicType.USER_TOPIC);
+        savedTopic = topicRepository.save(publicTopic);
+        TopicMembership giveMeABreak = new TopicMembership();
+        giveMeABreak.setPermission(TopicMembership.Permission.OWNER);
+        giveMeABreak.setUser(savedUser);
+        giveMeABreak.setTopic(savedTopic);
+        membershipRepository.save(giveMeABreak);
+        return userToGetUserRequest(savedUser);
     }
 
     public List<GetUserRequest> getAllUsers() {
@@ -64,8 +101,8 @@ public class UserService {
         if (userRepository.existsByHandle(user.getHandle())) {
             throw new HandleAlreadyExistsException(data.handle());
         }
-        Branch branch = branchService.getBranch(data.branch())
-                .orElseThrow(() -> new BadRequestException("Unknown branch: " + data.branch()));
+        Branch branch = branchRepository.findBranchByName(data.branch())
+                .orElseThrow(() -> new ResourceNotFoundException("branch " + data.branch()));
         user.setBranch(branch);
         user.setId(id);
         userRepository.save(user);
@@ -80,8 +117,7 @@ public class UserService {
         checkIfUserAuthenticated(id);
         String oldPassword = userRepository.findPasswordById(id)
                 .orElseThrow(() -> new ApplicationError("unexpected error"));
-        String oldPasswordProvided = passwordEncoder.encode(password.oldPassword());
-        if (!oldPasswordProvided.equals(oldPassword)) {
+        if (!passwordEncoder.matches(password.oldPassword(), oldPassword)) {
             throw new BadRequestException("Incorrect password");
         }
         // TODO - Validate the new password
@@ -121,10 +157,17 @@ public class UserService {
                 u.getHandle(),
                 u.getEmail(),
                 u.getCountry(),
-                (u.getGender() != null)? u.getGender().toString(): "",
-                (u.getGender() != null)? u.getBranch().getName(): "",
+                u.getGender().toString(),
+                (u.getBranch() != null)? u.getBranch().getName(): null,
                 u.getTitle(),
                 u.getCreatedOn()
         );
+    }
+
+    public AuthToken getAuthenticatedUser() {
+        long id = authService.getAuthenticatedUserId();
+        String handle = userRepository.findHandleById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("user"));
+        return new AuthToken(id, handle, null);
     }
 }

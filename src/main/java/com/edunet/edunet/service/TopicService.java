@@ -19,6 +19,8 @@ import com.edunet.edunet.repository.UserRepository;
 import com.edunet.edunet.security.AuthenticationService;
 import static com.edunet.edunet.model.TopicMembership.*;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -46,6 +48,11 @@ public class TopicService {
         topic.setOwner(new User(authService.getAuthenticatedUserId()));
         topic.setCreatedOn(LocalDate.now());
         topicRepository.save(topic);
+        TopicMembership ownership = new TopicMembership();
+        ownership.setUser(new User(authService.getAuthenticatedUserId()));
+        ownership.setTopic(topic);
+        ownership.setPermission(Permission.OWNER);
+        topicMembershipRepository.save(ownership);
         return TopicService.topicToGetTopicRequest(topic);
     }
 
@@ -104,6 +111,13 @@ public class TopicService {
         }
         return membershipRequestRepository.findHandlesByTopicId(id).stream()
                 .map(handle -> new UserIdHandle(null, handle))
+                .toList();
+    }
+
+    public List<GetTopicRequest> getAllTopics(int size, int page) {
+        PageRequest pr = PageRequest.of(page, size);
+        return topicRepository.findByType(Topic.TopicType.CREATED_TOPIC).stream()
+                .map(TopicService::topicToGetTopicRequest)
                 .toList();
     }
 

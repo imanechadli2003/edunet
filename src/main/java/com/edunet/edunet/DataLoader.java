@@ -10,6 +10,7 @@ import com.edunet.edunet.repository.TopicRepository;
 import com.edunet.edunet.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 
 @Component
 @AllArgsConstructor
+@Profile("dev")
 public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -49,6 +51,8 @@ public class DataLoader implements CommandLineRunner {
         Role role = roleRepository.getRoleByName("admin");
         admin.setRole(role);
         admin.setHandle("admin");
+        admin.setEmail("admin@edunet.com");
+        admin.setGender(User.Gender.FEMALE);
         admin.setPassword(passwordEncoder.encode("admin"));
         userRepository.save(admin);
 

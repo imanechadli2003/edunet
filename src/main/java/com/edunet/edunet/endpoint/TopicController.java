@@ -53,5 +53,10 @@ public class TopicController {
         topicService.respondToMembershipRequest(data);
     }
 
+    @GetMapping
+    public List<GetTopicRequest> all(@RequestParam int size, @RequestParam int page) {
+        return topicService.getAllTopics(size, page);
+    }
+
     // TODO - Update user membership [update permissions, remove]
 }

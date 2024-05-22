@@ -30,7 +30,7 @@ public class User {
     private String handle;
 
     @Enumerated
-    @Column(columnDefinition = "smallint")
+    @Column(columnDefinition = "smallint", nullable = false)
     private Gender gender;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -42,13 +42,14 @@ public class User {
     @Column(nullable = false)
     private String title;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
     @JsonIgnore
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
     private String country = "French";
 
     @ManyToOne(fetch = FetchType.EAGER)

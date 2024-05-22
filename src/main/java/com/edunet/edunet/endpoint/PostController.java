@@ -42,4 +42,5 @@ public class PostController {
     public void vote(@PathVariable int id, @RequestBody Vote vote) {
         postService.vote(id, vote);
     }
+
 }

@@ -1,10 +1,8 @@
 package com.edunet.edunet.endpoint;
 
-import com.edunet.edunet.dto.Login;
-import com.edunet.edunet.dto.PostUserRequest;
-import com.edunet.edunet.dto.GetUserRequest;
-import com.edunet.edunet.dto.UpdatePasswordRequest;
+import com.edunet.edunet.dto.*;
 import com.edunet.edunet.model.User;
+import com.edunet.edunet.service.PostService;
 import com.edunet.edunet.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -17,18 +15,22 @@ import java.util.List;
 @RestController
 @RequestMapping(value = "/api/users", produces = "application/json")
 @AllArgsConstructor
+@CrossOrigin(origins = "*")
 public class UserController {
 
     private UserService userService;
 
+    private final PostService postService;
+
     @GetMapping("/{id}")
     public GetUserRequest getUser(@PathVariable Long id) {
-        return userService.findUserById(id);
+        return userService.getUserById(id);
     }
 
     @PostMapping("/signup")
-    public void createNewUser(@RequestBody PostUserRequest data) {
-        userService.save(data);
+    public GetUserRequest createNewUser(@RequestBody PostUserRequest data) {
+        System.out.println("Signing up " + data.handle());
+        return userService.save(data);
     }
 
     @GetMapping("/all")
@@ -58,13 +60,23 @@ public class UserController {
         userService.updatePassword(id, password);
     }
 
-    @PostMapping("/login")
-    public void login(@RequestBody Login login) {
-        // TODO
+    @GetMapping("/{id}/posts/public")
+    public List<GetPostRequest> getUserPublicPosts(@PathVariable long id) {
+        return postService.getUserPublicPosts(id);
     }
 
-    @GetMapping("/logout")
-    public void logout() {
-        // TODO
+    @GetMapping("/{id}/posts/private")
+    public List<GetPostRequest> getUserPrivatePosts(@PathVariable long id) {
+        return postService.getUserPrivatePosts(id);
+    }
+
+    @PostMapping("/posts/public")
+    public GetPostRequest createUserPublicPost(@RequestBody PostPostRequest data) {
+        return postService.createUserPublicPost(data);
+    }
+
+    @PostMapping("/posts/private")
+    public GetPostRequest createUserPrivatePost(@RequestBody PostPostRequest data) {
+        return postService.createUserPrivatePost(data);
     }
 }

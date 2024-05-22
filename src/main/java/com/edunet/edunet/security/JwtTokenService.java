@@ -19,7 +19,7 @@ public class JwtTokenService {
     public String generateToken(Authentication auth) {
         AuthenticationImpl authentication = (AuthenticationImpl) auth;
         Instant now = Instant.now();
-        String scope = auth.getAuthorities().stream().limit(1).toList().getFirst().getAuthority();
+        String scope = auth.getAuthorities().stream().limit(1).toList().get(0).getAuthority();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("self")
                 .subject(auth.getName())
