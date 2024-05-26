@@ -36,11 +36,10 @@ public class SecurityConfig {
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         request -> request
-                                .requestMatchers("/api/auth/token").permitAll()
-                                .requestMatchers("/api/auth/user").authenticated()
-                                .requestMatchers("/api/users/signup").permitAll()
+                                .requestMatchers("/api/auth/token", "/api/users/signup").permitAll()
                                 .requestMatchers("/api/admin/**").hasAuthority("SCOPE_admin")
                                 .requestMatchers("/api/management/**").hasAuthority("SCOPE_manager")
+                                .requestMatchers("/api/auth/user").authenticated()
                                 .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(server -> server.jwt(Customizer.withDefaults()));

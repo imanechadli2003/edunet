@@ -2,7 +2,7 @@ package com.edunet.edunet.dto;
 
 import java.time.LocalDateTime;
 
-public record GetPostRequest(
+public record PostDto(
         int id,
         String topicName,
         String author,
@@ -11,5 +11,4 @@ public record GetPostRequest(
         int upVotes,
         int downVotes,
         int comments
-) {
-}
+) {}

@@ -1,17 +1,12 @@
 package com.edunet.edunet.service;
 
-import com.edunet.edunet.dto.AuthToken;
-import com.edunet.edunet.dto.PostUserRequest;
-import com.edunet.edunet.dto.GetUserRequest;
-import com.edunet.edunet.dto.UpdatePasswordRequest;
+import com.edunet.edunet.dto.*;
 import com.edunet.edunet.exception.*;
-import com.edunet.edunet.model.Branch;
-import com.edunet.edunet.model.Topic;
-import com.edunet.edunet.model.TopicMembership;
-import com.edunet.edunet.model.User;
+import com.edunet.edunet.model.*;
 import com.edunet.edunet.repository.*;
 import com.edunet.edunet.security.AuthenticationService;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -37,15 +32,19 @@ public class UserService {
 
     private MembershipRepository membershipRepository;
 
+    private final PostRepository postRepository;
+
+    private final PostService postService;
+
     private final Clock clock;
 
-    public GetUserRequest getUserById(Long id) {
+    public UserDto getUserById(Long id) {
         User user = userRepository.findUserById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("user " + id));
         return userToGetUserRequest(user);
     }
 
-    public GetUserRequest save(PostUserRequest data) {
+    public UserDto save(CreateUserDto data) {
         LocalDate now = LocalDate.now(clock);
         User user = UserService.postUserRequestToUser(data);
         if (userRepository.existsByHandle(user.getHandle())) {
@@ -89,13 +88,13 @@ public class UserService {
         return userToGetUserRequest(savedUser);
     }
 
-    public List<GetUserRequest> getAllUsers() {
+    public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(UserService::userToGetUserRequest)
                 .toList();
     }
 
-    public void updateUser(Long id, PostUserRequest data) {
+    public void updateUser(Long id, CreateUserDto data) {
         checkIfUserAuthenticated(id);
         User user = postUserRequestToUser(data);
         if (userRepository.existsByHandle(user.getHandle())) {
@@ -113,7 +112,7 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public void updatePassword(Long id, UpdatePasswordRequest password) {
+    public void updatePassword(Long id, UpdatePasswordDto password) {
         checkIfUserAuthenticated(id);
         String oldPassword = userRepository.findPasswordById(id)
                 .orElseThrow(() -> new ApplicationError("unexpected error"));
@@ -136,9 +135,9 @@ public class UserService {
 
 
     /**
-     * Create a User instance and map trivial values from PostUserRequest.
+     * Create a User instance and map trivial values from CreateUserDto.
      */
-    private static User postUserRequestToUser(PostUserRequest data) {
+    private static User postUserRequestToUser(CreateUserDto data) {
         User user = new User();
         user.setFirstName(data.firstName());
         user.setLastName(data.lastName());
@@ -150,8 +149,9 @@ public class UserService {
         return user;
     }
 
-    private static GetUserRequest userToGetUserRequest(User u) {
-        return new GetUserRequest(
+    private static UserDto userToGetUserRequest(User u) {
+        return new UserDto(
+                u.getId(),
                 u.getFirstName(),
                 u.getLastName(),
                 u.getHandle(),
@@ -169,5 +169,50 @@ public class UserService {
         String handle = userRepository.findHandleById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("user"));
         return new AuthToken(id, handle, null);
+    }
+
+    public List<UserDto> search(String like, int page, int size) {
+        PageRequest pr = PageRequest.of(page, size);
+        return userRepository.findByHandleContaining(like, pr).stream()
+                .map(UserService::userToGetUserRequest)
+                .toList();
+    }
+
+    public List<PostDto> getUserPublicPosts(long id) {
+        String handle = userRepository.findHandleById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("user " + id));
+        return this.postRepository.findPostByName("pu" + id).stream()
+                .map(p -> new PostDto(
+                        p.getId(),
+                        "public posts",
+                        handle,
+                        p.getContent(),
+                        p.getCreatedOn(),
+                        p.getUps(),
+                        p.getDowns(),
+                        p.getNumberOfComments()
+                )).toList();
+    }
+
+    public List<PostDto> getUserPrivatePosts(long id) {
+        checkIfUserAuthenticated(id);
+        String handle = userRepository.findHandleById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("user " + id));
+        return this.postRepository.findPostByName("pr" + id).stream()
+                .map(p -> new PostDto(
+                        p.getId(),
+                        "public posts",
+                        handle,
+                        p.getContent(),
+                        p.getCreatedOn(),
+                        p.getUps(),
+                        p.getDowns(),
+                        p.getNumberOfComments()
+                )).toList();
+    }
+
+    public PostDto createUserPublicPost(CreatePostDto data) {
+        long id = authService.getAuthenticatedUserId();
+        return postService.createPostForTopic("pu" + id, data);
     }
 }

@@ -1,6 +1,6 @@
 package com.edunet.edunet.dto;
 
-public record PostUserRequest(
+public record CreateUserDto(
         String firstName,
         String lastName,
         String handle,

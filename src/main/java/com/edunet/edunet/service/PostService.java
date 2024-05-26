@@ -1,14 +1,13 @@
 package com.edunet.edunet.service;
 
-
-import com.edunet.edunet.dto.GetPostRequest;
-import com.edunet.edunet.dto.PostPostRequest;
-import com.edunet.edunet.dto.UpdatePostRequest;
+import com.edunet.edunet.dto.PostDto;
+import com.edunet.edunet.dto.CreatePostDto;
 import com.edunet.edunet.dto.Vote;
 import com.edunet.edunet.exception.NotAllowedException;
 import com.edunet.edunet.exception.ResourceNotFoundException;
 import com.edunet.edunet.model.Post;
 import com.edunet.edunet.model.Topic;
+import com.edunet.edunet.model.TopicMembership;
 import com.edunet.edunet.model.User;
 import com.edunet.edunet.repository.PostRepository;
 import com.edunet.edunet.repository.MembershipRepository;
@@ -18,12 +17,14 @@ import com.edunet.edunet.security.AuthenticationService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.cors.CorsConfiguration;
 
-import static com.edunet.edunet.model.TopicMembership.*;
 import static com.edunet.edunet.model.Topic.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -40,25 +41,8 @@ public class PostService {
 
     private AuthenticationService authService;
 
-    public GetPostRequest createNewPost(PostPostRequest data) {
-        long userId = authService.getAuthenticatedUserId();
-        int topicId = (data.topicId() != null)? data.topicId(): topicRepository.findIdByName(data.topicName())
-                        .orElseThrow(() -> new ResourceNotFoundException("topic " + data.topicName()));
-        Permission permission = membershipRepository.findPermissionById(userId, topicId)
-                    .orElseThrow(() -> new NotAllowedException("You are not a member of the topic"));
-        if (permission.val() < Permission.WRITE.val()) {
-            throw new NotAllowedException("You don't have the permission to write to the topic");
-        }
-        Post post = new Post();
-        post.setAuthor(new User(userId));
-        post.setTopic(new Topic(topicId));
-        post.setContent(data.content());
-        post.setCreatedOn(LocalDateTime.now());
-        post = postRepository.save(post);
-        return postToGetPostRequest(postRepository.findById(post.getId()).get());
-    }
 
-    public List<GetPostRequest> getPosts(String topic, int page, int size) {
+    public List<PostDto> getPosts(String topic, int page, int size) {
         Privacy privacy = topicRepository.getPrivacyByName(topic)
                 .orElseThrow(() -> new ResourceNotFoundException("topic " + topic));
         if (privacy == Privacy.PRIVATE) {
@@ -74,7 +58,7 @@ public class PostService {
                 .toList();
     }
 
-    public GetPostRequest updatePost(int id, UpdatePostRequest data) {
+    public PostDto updatePost(int id, CreatePostDto data) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found"));
         post.setContent(data.content());
@@ -83,17 +67,37 @@ public class PostService {
     }
 
     public void deletePost(int postId) {
-        // TODO - The owner of a topic must be able to delete posts too
-        Long userId = authService.getAuthenticatedUserId();
-        postRepository.deletePostIfAuthorIdMatch(postId, userId);
+        long userId = authService.getAuthenticatedUserId();
+        try {
+            checkIfAuthUserIsAuthor(postId, userId);
+        } catch (NotAllowedException ignored) {
+            checkIfAuthUserIsTopicOwner(postId, userId);
+        }
+        postRepository.deletePost(postId);
+    }
+
+    private void checkIfAuthUserIsTopicOwner(int postId, long userId) {
+        long topicOwner = postRepository.findTopicOwnerId(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("post " + postId));
+        if (topicOwner != userId) {
+            throw new NotAllowedException("Not allowed");
+        }
+    }
+
+    private void checkIfAuthUserIsAuthor(int postId, long userId) {
+        long authorId = postRepository.findAuthorId(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("post " + postId));
+        if (authorId != userId) {
+            throw new NotAllowedException("Not allowed");
+        }
     }
 
     private boolean isMemberOfTopic(long userId, int topicId) {
         return membershipRepository.findPermissionById(userId, topicId).isPresent();
     }
 
-    private static GetPostRequest postToGetPostRequest(Post post) {
-        return new GetPostRequest(
+    private static PostDto postToGetPostRequest(Post post) {
+        return new PostDto(
                 post.getId(),
                 post.getTopic().getName(),
                 post.getAuthor().getHandle(),
@@ -114,14 +118,14 @@ public class PostService {
         }
     }
 
-    public List<GetPostRequest> getUserPublicPosts(long id) {
+    public List<PostDto> getUserPublicPosts(long id) {
         PageRequest pr = PageRequest.of(0, 10);
         return postRepository.findAllByTopic("pu" + id, pr)
                 .map(PostService::postToGetPostRequest)
                 .toList();
     }
 
-    public List<GetPostRequest> getUserPrivatePosts(long id) {
+    public List<PostDto> getUserPrivatePosts(long id) {
         if (authService.getAuthenticatedUserId() != id) {
             throw new NotAllowedException("These posts are private");
         }
@@ -131,15 +135,21 @@ public class PostService {
                 .toList();
     }
 
-    public GetPostRequest createUserPublicPost(PostPostRequest data) {
-        long id = authService.getAuthenticatedUserId();
-        PostPostRequest newPost = new PostPostRequest(null, "pu" + id, data.content());
-        return createNewPost(newPost);
-    }
-
-    public GetPostRequest createUserPrivatePost(PostPostRequest data) {
-        long id = authService.getAuthenticatedUserId();
-        PostPostRequest newPost = new PostPostRequest(null, "pr" + id, data.content());
-        return createNewPost(newPost);
+    public PostDto createPostForTopic(String name, CreatePostDto data) {
+        long userId = authService.getAuthenticatedUserId();
+        int topicId = topicRepository.findIdByName(name)
+                .orElseThrow(() -> new ResourceNotFoundException("topic " + name));
+        TopicMembership.Permission permission = membershipRepository.findPermissionById(userId, topicId)
+                .orElseThrow(() -> new NotAllowedException("You are not a member of the topic"));
+        if (permission.val() < TopicMembership.Permission.WRITE.val()) {
+            throw new NotAllowedException("You don't have the permission to write to the topic");
+        }
+        Post post = new Post();
+        post.setAuthor(new User(userId));
+        post.setTopic(new Topic(topicId));
+        post.setContent(data.content());
+        post.setCreatedOn(LocalDateTime.now());
+        post = postRepository.save(post);
+        return postToGetPostRequest(postRepository.findById(post.getId()).get());
     }
 }

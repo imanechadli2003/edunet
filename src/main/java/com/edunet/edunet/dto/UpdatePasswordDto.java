@@ -1,6 +1,6 @@
 package com.edunet.edunet.dto;
 
-public record UpdatePasswordRequest(
+public record UpdatePasswordDto(
         String oldPassword,
         String newPassword,
         String confirmPassword

@@ -27,6 +27,9 @@ public interface TopicRepository extends JpaRepository<Topic, Integer> {
     @Query("SELECT t.name FROM Topic t WHERE t.id = :id")
     Optional<String> findNameById(int id);
 
+    @Query("SELECT t.privacy FROM Topic t WHERE t.id = :id")
+    Optional<Topic.Privacy> findPrivacyById(int id);
+
     @Query("SELECT t.privacy FROM Topic t WHERE t.name = :name")
     Optional<Topic.Privacy> getPrivacyByName(String name);
 
@@ -34,4 +37,6 @@ public interface TopicRepository extends JpaRepository<Topic, Integer> {
     Optional<Integer> findIdByName(String name);
 
     List<Topic> findByType(Topic.TopicType type);
+
+    List<Topic> findByNameContainingAndType(String keyword, Topic.TopicType type, PageRequest pr);
 }

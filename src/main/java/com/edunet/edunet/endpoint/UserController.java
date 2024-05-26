@@ -3,6 +3,7 @@ package com.edunet.edunet.endpoint;
 import com.edunet.edunet.dto.*;
 import com.edunet.edunet.model.User;
 import com.edunet.edunet.service.PostService;
+import com.edunet.edunet.service.TopicService;
 import com.edunet.edunet.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -22,25 +23,27 @@ public class UserController {
 
     private final PostService postService;
 
+    private final TopicService topicService;
+
     @GetMapping("/{id}")
-    public GetUserRequest getUser(@PathVariable Long id) {
+    public UserDto getUser(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
     @PostMapping("/signup")
-    public GetUserRequest createNewUser(@RequestBody PostUserRequest data) {
+    public UserDto createNewUser(@RequestBody CreateUserDto data) {
         System.out.println("Signing up " + data.handle());
         return userService.save(data);
     }
 
     @GetMapping("/all")
-    public List<GetUserRequest> getAllUsers() {
+    public List<UserDto> getAllUsers() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return userService.getAllUsers();
     }
 
     @PostMapping("/{id}")
-    public void updateUser(@PathVariable Long id, @RequestBody PostUserRequest data) {
+    public void updateUser(@PathVariable Long id, @RequestBody CreateUserDto data) {
         userService.updateUser(id, data);
     }
 
@@ -49,34 +52,35 @@ public class UserController {
         userService.deleteUser(id);
     }
 
-    @GetMapping("/search")
-    public List<User> search() {
-        // TODO
-        return Collections.emptyList();
-    }
-
     @PostMapping("/update-password/{id}")
-    public void updatePassword(@PathVariable Long id, @RequestBody UpdatePasswordRequest password) {
+    public void updatePassword(@PathVariable Long id, @RequestBody UpdatePasswordDto password) {
         userService.updatePassword(id, password);
     }
 
     @GetMapping("/{id}/posts/public")
-    public List<GetPostRequest> getUserPublicPosts(@PathVariable long id) {
-        return postService.getUserPublicPosts(id);
+    public List<PostDto> getUserPublicPosts(@PathVariable long id) {
+        return userService.getUserPublicPosts(id);
     }
 
     @GetMapping("/{id}/posts/private")
-    public List<GetPostRequest> getUserPrivatePosts(@PathVariable long id) {
-        return postService.getUserPrivatePosts(id);
+    public List<PostDto> getUserPrivatePosts(@PathVariable long id) {
+        return userService.getUserPrivatePosts(id);
     }
 
+    @GetMapping("/search")
+    public List<UserDto> search(@RequestParam String like, @RequestParam int page, @RequestParam int size) {
+        return this.userService.search(like, page, size);
+    }
+
+
     @PostMapping("/posts/public")
-    public GetPostRequest createUserPublicPost(@RequestBody PostPostRequest data) {
-        return postService.createUserPublicPost(data);
+    public PostDto createUserPublicPost(@RequestBody CreatePostDto data) {
+        return userService.createUserPublicPost(data);
     }
 
     @PostMapping("/posts/private")
-    public GetPostRequest createUserPrivatePost(@RequestBody PostPostRequest data) {
-        return postService.createUserPrivatePost(data);
+    public PostDto createUserPrivatePost(@RequestBody CreatePostDto data) {
+        // TODO - return postService.user(data);
+        return null;
     }
 }

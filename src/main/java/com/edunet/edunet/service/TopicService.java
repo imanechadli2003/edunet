@@ -1,30 +1,22 @@
 package com.edunet.edunet.service;
 
-import com.edunet.edunet.dto.GetTopicRequest;
-import com.edunet.edunet.dto.MembershipRequestResponse;
-import com.edunet.edunet.dto.PostTopicRequest;
-import com.edunet.edunet.dto.UserIdHandle;
+import com.edunet.edunet.dto.*;
 import com.edunet.edunet.exception.ApplicationError;
 import com.edunet.edunet.exception.BadRequestException;
 import com.edunet.edunet.exception.NotAllowedException;
 import com.edunet.edunet.exception.ResourceNotFoundException;
-import com.edunet.edunet.model.Topic;
-import com.edunet.edunet.model.TopicMembership;
-import com.edunet.edunet.model.TopicMembershipRequest;
-import com.edunet.edunet.model.User;
-import com.edunet.edunet.repository.MembershipRepository;
-import com.edunet.edunet.repository.MembershipRequestRepository;
-import com.edunet.edunet.repository.TopicRepository;
-import com.edunet.edunet.repository.UserRepository;
+import com.edunet.edunet.model.*;
+import com.edunet.edunet.repository.*;
 import com.edunet.edunet.security.AuthenticationService;
 import static com.edunet.edunet.model.TopicMembership.*;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -40,7 +32,9 @@ public class TopicService {
 
     private final AuthenticationService authService;
 
-    public GetTopicRequest createTopic(PostTopicRequest data) {
+    private final PostRepository postRepository;
+
+    public TopicDto createTopic(CreateTopicDto data) {
         Topic topic = new Topic();
         topic.setName(data.name());
         topic.setDescription(data.description());
@@ -56,9 +50,10 @@ public class TopicService {
         return TopicService.topicToGetTopicRequest(topic);
     }
 
-    public GetTopicRequest getTopic(int id) {
+    public TopicDto getTopic(int id) {
         Topic topic = topicRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("topic " + id));
+
         return topicToGetTopicRequest(topic);
     }
 
@@ -67,7 +62,7 @@ public class TopicService {
         topicRepository.deleteById(id);
     }
 
-    public GetTopicRequest updateTopic(int id, PostTopicRequest data) {
+    public TopicDto updateTopic(int id, CreateTopicDto data) {
         Topic topic = getTopicIfAuthenticatedIsOwner(id);
         topicRepository.save(postTopicRequestToRequest(topic, data));
         return topicToGetTopicRequest(topic);
@@ -114,26 +109,28 @@ public class TopicService {
                 .toList();
     }
 
-    public List<GetTopicRequest> getAllTopics(int size, int page) {
+    public List<TopicDto> getAllTopics(int size, int page) {
         PageRequest pr = PageRequest.of(page, size);
         return topicRepository.findByType(Topic.TopicType.CREATED_TOPIC).stream()
                 .map(TopicService::topicToGetTopicRequest)
                 .toList();
     }
 
-    private static Topic postTopicRequestToRequest(Topic topic, PostTopicRequest data) {
+    private static Topic postTopicRequestToRequest(Topic topic, CreateTopicDto data) {
         topic.setDescription(data.description());
         topic.setName(data.name());
         return topic;
     }
 
-    private static GetTopicRequest topicToGetTopicRequest(Topic topic) {
-        return new GetTopicRequest(
+    private static TopicDto topicToGetTopicRequest(Topic topic) {
+        return new TopicDto(
+                topic.getId(),
                 topic.getName(),
                 topic.getDescription(),
                 topic.getPrivacy().name(),
                 topic.getOwner().getHandle(),
-                topic.getCreatedOn());
+                topic.getCreatedOn(),
+                "");
     }
 
     private void checkIfAuthenticatedUserIsOwner(int topicId) {
@@ -153,5 +150,76 @@ public class TopicService {
             throw new NotAllowedException("not enough permissions");
         }
         return topic;
+    }
+
+    public List<TopicDto> getAllTopicsForUser(int page, int size) {
+        long id = authService.getAuthenticatedUserId();
+        PageRequest pr = PageRequest.of(page, size);
+        return topicMembershipRepository.findTopicsForUserById(id, pr)
+                .stream().map(TopicService::topicToGetTopicRequest)
+                .toList();
+    }
+
+    public List<TopicDto> search(String like, int page, int size) {
+        PageRequest pr = PageRequest.of(page, size);
+        return topicRepository.findByNameContainingAndType(like, Topic.TopicType.CREATED_TOPIC, pr).stream()
+                .map(TopicService::topicToGetTopicRequest)
+                .toList();
+    }
+
+    public List<PostDto> getPosts(int topicId) {
+        Topic.Privacy privacy = topicRepository.findPrivacyById(topicId)
+                .orElseThrow(() -> new ResourceNotFoundException("topic " + topicId));
+        if (privacy == Topic.Privacy.PRIVATE) {
+            long userId = authService.getAuthenticatedUserId();
+            if (!isMemberOfTopic(userId, topicId)) {
+                throw new NotAllowedException("Not Authorized");
+            }
+        }
+        PageRequest pr = PageRequest.of(0, 10);
+        return postRepository.findAllById(topicId, pr).stream()
+                .map(TopicService::postToGetPostRequest)
+                .toList();
+    }
+
+    private boolean isMemberOfTopic(long userId, int topicId) {
+        return topicMembershipRepository.findPermissionById(userId, topicId).isPresent();
+    }
+
+    public MembershipDto membershipOfAuthUser(int topicId) {
+        long userId = authService.getAuthenticatedUserId();
+        return topicMembershipRepository.findPermissionById(userId, topicId)
+                .map(permission -> new MembershipDto(
+                        permission.name()))
+                .orElseGet(() -> new MembershipDto("NONE"));
+    }
+
+    private static PostDto postToGetPostRequest(Post post) {
+        return new PostDto(
+                post.getId(),
+                post.getTopic().getName(),
+                post.getAuthor().getHandle(),
+                post.getContent(),
+                post.getCreatedOn(),
+                post.getUps(),
+                post.getDowns(),
+                post.getNumberOfComments()
+        );
+    }
+
+    public PostDto createPost(int topicId, CreatePostDto data) {
+        long userId = authService.getAuthenticatedUserId();
+        Permission permission = topicMembershipRepository.findPermissionById(userId, topicId)
+                .orElseThrow(() -> new NotAllowedException("You are not a member of the topic"));
+        if (permission.val() < Permission.WRITE.val()) {
+            throw new NotAllowedException("You don't have the permission to write to the topic");
+        }
+        Post post = new Post();
+        post.setAuthor(new User(userId));
+        post.setTopic(new Topic(topicId));
+        post.setContent(data.content());
+        post.setCreatedOn(LocalDateTime.now());
+        post = postRepository.save(post);
+        return postToGetPostRequest(postRepository.findById(post.getId()).get());
     }
 }

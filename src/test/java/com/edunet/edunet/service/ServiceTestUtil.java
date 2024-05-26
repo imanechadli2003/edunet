@@ -1,7 +1,7 @@
 package com.edunet.edunet.service;
 
-import com.edunet.edunet.dto.GetUserRequest;
-import com.edunet.edunet.dto.PostUserRequest;
+import com.edunet.edunet.dto.CreateUserDto;
+import com.edunet.edunet.dto.UserDto;
 import com.edunet.edunet.model.Branch;
 import com.edunet.edunet.model.User;
 
@@ -13,9 +13,9 @@ public class ServiceTestUtil {
 
     public static final User USER;
 
-    public static final GetUserRequest GET_USER_DTO;
+    public static final UserDto GET_USER_DTO;
 
-    public static final PostUserRequest POST_USER_DTO;
+    public static final CreateUserDto POST_USER_DTO;
 
     public static final Branch BRANCH;
 
@@ -26,12 +26,12 @@ public class ServiceTestUtil {
 
         BRANCH = new Branch(1, "Mathematics", "hell on earth");
 
-        POST_USER_DTO = new PostUserRequest(
+        POST_USER_DTO = new CreateUserDto(
                 "Friedrich", "Gauss", "princeofmath", MALE.val(), "Mathematics",
                 "Mathematician", "friedrich.gauss19@gmail.com", "Johanna@Osthoff", "Germany"
         );
 
-        GET_USER_DTO = new GetUserRequest(
+        GET_USER_DTO = new UserDto(
                 POST_USER_DTO.firstName(), POST_USER_DTO.lastName(), POST_USER_DTO.handle(), POST_USER_DTO.email(),
                 POST_USER_DTO.country(), MALE.name(), BRANCH.getName(), POST_USER_DTO.title(), LocalDate.of(1793, 5, 1)
         );

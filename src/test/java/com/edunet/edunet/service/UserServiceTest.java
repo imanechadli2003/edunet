@@ -1,8 +1,8 @@
 package com.edunet.edunet.service;
 
-import com.edunet.edunet.dto.GetUserRequest;
-import com.edunet.edunet.dto.PostUserRequest;
-import com.edunet.edunet.dto.UpdatePasswordRequest;
+import com.edunet.edunet.dto.CreateUserDto;
+import com.edunet.edunet.dto.UserDto;
+import com.edunet.edunet.dto.UpdatePasswordDto;
 import com.edunet.edunet.exception.NotAllowedException;
 import com.edunet.edunet.exception.ResourceNotFoundException;
 import com.edunet.edunet.model.Branch;
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.verification.VerificationMode;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Clock;
@@ -67,9 +66,9 @@ class UserServiceTest {
     @Test
     public void testCreateUser_ShouldSucceed() {
         Branch branch = ServiceTestUtil.BRANCH;
-        PostUserRequest userData = ServiceTestUtil.POST_USER_DTO;
+        CreateUserDto userData = ServiceTestUtil.POST_USER_DTO;
         User user = ServiceTestUtil.USER;
-        GetUserRequest expected = ServiceTestUtil.GET_USER_DTO;
+        UserDto expected = ServiceTestUtil.GET_USER_DTO;
 
         when(passwordEncoder.encode(userData.password())).thenReturn(userData.password());
         when(userRepository.existsByHandle(userData.handle())).thenReturn(false);
@@ -78,7 +77,7 @@ class UserServiceTest {
         when(clock.getZone()).thenReturn(ZoneId.of("UCT"));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
-        GetUserRequest actual = userService.save(userData);
+        UserDto actual = userService.save(userData);
 
         verify(topicRepository, times(2)).save(any(Topic.class));
         assertEquals(expected, actual);
@@ -89,8 +88,8 @@ class UserServiceTest {
         User user = ServiceTestUtil.USER;
         when(userRepository.findUserById(1L)).thenReturn(Optional.of(user));
 
-        GetUserRequest expected = ServiceTestUtil.GET_USER_DTO;
-        GetUserRequest actual = userService.getUserById(1L);
+        UserDto expected = ServiceTestUtil.GET_USER_DTO;
+        UserDto actual = userService.getUserById(1L);
 
         assertEquals(expected, actual);
     }
@@ -121,7 +120,7 @@ class UserServiceTest {
         when(passwordEncoder.encode(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(passwordEncoder.matches(anyString(), anyString()))
                 .thenAnswer(invocation -> (invocation.getArguments()[0].equals(invocation.getArguments()[1])));
-        UpdatePasswordRequest data = new UpdatePasswordRequest("Tea>Coffee", "Tea>>>Coffee", "Tea>>>Coffee");
+        UpdatePasswordDto data = new UpdatePasswordDto("Tea>Coffee", "Tea>>>Coffee", "Tea>>>Coffee");
         userService.updatePassword(555L, data);
         verify(userRepository, times(1)).updatePassword(555L, "Tea>>>Coffee");
     }
@@ -129,6 +128,6 @@ class UserServiceTest {
     @Test
     public void testUpdatePassword_ShouldThrowNotAllowedException() {
         when(authService.getAuthenticatedUserId()).thenReturn(555L);
-        assertThrows(NotAllowedException.class, () -> userService.updatePassword(444L, new UpdatePasswordRequest("", "", "")));
+        assertThrows(NotAllowedException.class, () -> userService.updatePassword(444L, new UpdatePasswordDto("", "", "")));
     }
 }

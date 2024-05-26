@@ -2,7 +2,8 @@
 
 import java.time.LocalDate;
 
-public record GetUserRequest(
+public record UserDto(
+        long id,
         String firstName,
         String lastName,
         String handle,
