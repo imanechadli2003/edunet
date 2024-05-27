@@ -35,6 +35,11 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
     @Query("UPDATE Post p SET p.downs = p.downs + 1 WHERE p.id = :id")
     void incrementDowns(int id);
 
+    @Transactional
+    @Modifying
+    @Query("UPDATE Post p SET p.numberOfComments = p.numberOfComments + 1 WHERE p.id = :id")
+    void incrementComments(int id);
+
     @Query("SELECT p FROM Post p WHERE p.topic.id = :id")
     List<Post> findAllById(int id, PageRequest pr);
 

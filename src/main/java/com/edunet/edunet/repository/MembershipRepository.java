@@ -19,6 +19,9 @@ public interface MembershipRepository extends JpaRepository<TopicMembership, Lon
     @Query("SELECT m.permission FROM TopicMembership m WHERE m.user.id = :uid AND m.topic.id = :tid")
     Optional<Permission> findPermissionById(long uid, int tid);
 
-    @Query("SELECT m.topic FROM TopicMembership m WHERE m.user.id = :id")
-    List<Topic> findTopicsForUserById(long id, PageRequest pr);
+    @Query("SELECT m.topic FROM TopicMembership m WHERE m.user.id = :id AND m.topic.type = :type")
+    List<Topic> findTopicsForUserById(long id, Topic.TopicType type, PageRequest pr);
+
+    @Query("SELECT tmr.user.id, tmr.user.handle FROM TopicMembership tmr WHERE tmr.topic.id = :topicId")
+    List<Object[]> findMembersOf(int topicId);
 }

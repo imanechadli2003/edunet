@@ -41,8 +41,13 @@ public class TopicController {
         topicService.addMembershipRequest(id);
     }
 
+    @PostMapping("/{id}/leave")
+    public void leaveTopic(@PathVariable int id) {
+        // TODO
+    }
+
     @GetMapping("/{id}/requests")
-    public List<UserIdHandle> getAllRequests(@PathVariable int id) {
+    public List<JoinRequest> getAllRequests(@PathVariable int id) {
         return topicService.getAllRequests(id);
     }
 
@@ -76,6 +81,11 @@ public class TopicController {
         return topicService.membershipOfAuthUser(id);
     }
 
+
+    @GetMapping("/{id}/members")
+    public List<UserIdHandle> getTopicMembers(@PathVariable int id) {
+        return this.topicService.getTopicMembers(id);
+    }
 
     // TODO - Update user membership [update permissions, remove]
 }

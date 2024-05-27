@@ -36,14 +36,17 @@ public class Topic {
     @Column(columnDefinition = "smallint", nullable = false)
     private TopicType type = TopicType.CREATED_TOPIC;
 
-    @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts;
 
     @Column(name = "created_on", nullable = false)
     private LocalDate createdOn;
 
-    @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TopicMembership> members;
+
+    @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TopicMembershipRequest> requests;
 
     public Topic(int id) {
         this.id = id;

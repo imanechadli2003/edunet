@@ -52,7 +52,7 @@ public class UserController {
         userService.deleteUser(id);
     }
 
-    @PostMapping("/update-password/{id}")
+    @PostMapping("/change-password/{id}")
     public void updatePassword(@PathVariable Long id, @RequestBody UpdatePasswordDto password) {
         userService.updatePassword(id, password);
     }
@@ -71,7 +71,6 @@ public class UserController {
     public List<UserDto> search(@RequestParam String like, @RequestParam int page, @RequestParam int size) {
         return this.userService.search(like, page, size);
     }
-
 
     @PostMapping("/posts/public")
     public PostDto createUserPublicPost(@RequestBody CreatePostDto data) {

@@ -1,6 +1,7 @@
 package com.edunet.edunet.endpoint;
 
 
+import com.edunet.edunet.dto.CommentDto;
 import com.edunet.edunet.dto.PostDto;
 import com.edunet.edunet.dto.CreatePostDto;
 import com.edunet.edunet.dto.Vote;
@@ -36,6 +37,16 @@ public class PostController {
     @PostMapping("/vote/{id}")
     public void vote(@PathVariable int id, @RequestBody Vote vote) {
         postService.vote(id, vote);
+    }
+
+    @PostMapping("/{id}/comments")
+    public CommentDto addComment(@PathVariable int id, @RequestBody CommentDto comment) {
+        return this.postService.addComment(id, comment);
+    }
+
+    @GetMapping("/{id}/comments")
+    List<CommentDto> getComments(@PathVariable int id) {
+        return  this.postService.getComments(id);
     }
 
 }

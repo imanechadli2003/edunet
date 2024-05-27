@@ -10,6 +10,7 @@ import com.edunet.edunet.repository.*;
 import com.edunet.edunet.security.AuthenticationService;
 import static com.edunet.edunet.model.TopicMembership.*;
 import lombok.AllArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -76,7 +77,11 @@ public class TopicService {
         TopicMembershipRequest request = new TopicMembershipRequest();
         request.setTopic(topic);
         request.setUser(user);
-        membershipRequestRepository.save(request);
+        try {
+            membershipRequestRepository.save(request);
+        } catch (DataIntegrityViolationException exc) {
+            throw new NotAllowedException("This request is already added");
+        }
     }
 
     public void respondToMembershipRequest(MembershipRequestResponse data) {
@@ -87,25 +92,21 @@ public class TopicService {
             TopicMembership membership = new TopicMembership();
             membership.setTopic(request.getTopic());
             membership.setUser(request.getUser());
-            int val = data.permission();
-            if (!Permission.isValid(val)) {
-                throw new BadRequestException("invalid permission value:" + val);
-            }
-            Permission permission = Permission.fromInt(val);
+            Permission permission = Permission.WRITE;
             membership.setPermission(permission);
             topicMembershipRepository.save(membership);
         }
         membershipRequestRepository.delete(request);
     }
 
-    public List<UserIdHandle> getAllRequests(int id) {
+    public List<JoinRequest> getAllRequests(int id) {
         Topic topic = topicRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("topic " + id));
         if (authService.getAuthenticatedUserId() != topic.getOwner().getId()) {
             throw new NotAllowedException("not enough permissions");
         }
-        return membershipRequestRepository.findHandlesByTopicId(id).stream()
-                .map(handle -> new UserIdHandle(null, handle))
+        return membershipRequestRepository.findRequestUser(id).stream()
+                .map(result -> new JoinRequest((int) result[0], (long) result[1], (String) result[2]))
                 .toList();
     }
 
@@ -155,7 +156,7 @@ public class TopicService {
     public List<TopicDto> getAllTopicsForUser(int page, int size) {
         long id = authService.getAuthenticatedUserId();
         PageRequest pr = PageRequest.of(page, size);
-        return topicMembershipRepository.findTopicsForUserById(id, pr)
+        return topicMembershipRepository.findTopicsForUserById(id, Topic.TopicType.CREATED_TOPIC, pr)
                 .stream().map(TopicService::topicToGetTopicRequest)
                 .toList();
     }
@@ -221,5 +222,15 @@ public class TopicService {
         post.setCreatedOn(LocalDateTime.now());
         post = postRepository.save(post);
         return postToGetPostRequest(postRepository.findById(post.getId()).get());
+    }
+
+    public List<UserIdHandle> getTopicMembers(int id) {
+        long userId = authService.getAuthenticatedUserId();
+        if (!isMemberOfTopic(userId, id)) {
+            throw new NotAllowedException("Only a member of a topic can see list of its members");
+        }
+        return this.topicMembershipRepository.findMembersOf(id).stream()
+                .map(result -> new UserIdHandle((long) result[0], (String) result[1]))
+                .toList();
     }
 }

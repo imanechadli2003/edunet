@@ -26,7 +26,6 @@ public class Post {
     @JoinColumn(name = "topic_id", nullable = false)
     private Topic topic;
 
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "author_id")
     private User author;
@@ -47,4 +46,5 @@ public class Post {
     public Post(int id) {
         this.id = id;
     }
+
 }

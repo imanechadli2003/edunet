@@ -12,4 +12,7 @@ public interface MembershipRequestRepository extends JpaRepository<TopicMembersh
 
     @Query("SELECT tmr.user.handle FROM TopicMembershipRequest tmr WHERE tmr.topic.id = :topicId")
     List<String> findHandlesByTopicId(int topicId);
+
+    @Query("SELECT tmr.id, tmr.user.id, tmr.user.handle FROM TopicMembershipRequest tmr WHERE tmr.topic.id = :topicId")
+    List<Object[]> findRequestUser(int topicId);
 }

@@ -10,7 +10,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "membership_requests")
+@Table(name = "membership_requests", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "topic_id"})
+})
 public class TopicMembershipRequest {
 
     @Id

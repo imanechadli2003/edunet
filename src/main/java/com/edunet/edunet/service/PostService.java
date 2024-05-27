@@ -1,30 +1,22 @@
 package com.edunet.edunet.service;
 
+import com.edunet.edunet.dto.CommentDto;
 import com.edunet.edunet.dto.PostDto;
 import com.edunet.edunet.dto.CreatePostDto;
 import com.edunet.edunet.dto.Vote;
 import com.edunet.edunet.exception.NotAllowedException;
 import com.edunet.edunet.exception.ResourceNotFoundException;
-import com.edunet.edunet.model.Post;
-import com.edunet.edunet.model.Topic;
-import com.edunet.edunet.model.TopicMembership;
-import com.edunet.edunet.model.User;
-import com.edunet.edunet.repository.PostRepository;
-import com.edunet.edunet.repository.MembershipRepository;
-import com.edunet.edunet.repository.TopicRepository;
-import com.edunet.edunet.repository.UserRepository;
+import com.edunet.edunet.model.*;
+import com.edunet.edunet.repository.*;
 import com.edunet.edunet.security.AuthenticationService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.cors.CorsConfiguration;
 
 import static com.edunet.edunet.model.Topic.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -35,11 +27,11 @@ public class PostService {
 
     private final TopicRepository topicRepository;
 
-    private final UserRepository userRepository;
-
     private final MembershipRepository membershipRepository;
 
     private AuthenticationService authService;
+
+    private final CommentRepository commentRepository;
 
 
     public List<PostDto> getPosts(String topic, int page, int size) {
@@ -151,5 +143,34 @@ public class PostService {
         post.setCreatedOn(LocalDateTime.now());
         post = postRepository.save(post);
         return postToGetPostRequest(postRepository.findById(post.getId()).get());
+    }
+
+    public CommentDto addComment(int id, CommentDto data) {
+        // TODO - check permission
+        Comment comment = new Comment();
+        comment.setPost(new Post(id));
+        comment.setAuthor(new User(authService.getAuthenticatedUserId()));
+        comment.setContent(data.comment());
+        comment.setCreatedOn(LocalDateTime.now());
+        comment = commentRepository.save(comment);
+        postRepository.incrementComments(id);
+        return commentRepository.findById(comment.getId())
+                .map(PostService::commentEntityToDto)
+                .get();
+    }
+
+    public List<CommentDto> getComments(int id) {
+        return this.commentRepository.findByPost(id).stream()
+                .map(PostService::commentEntityToDto).toList();
+    }
+
+    private static CommentDto commentEntityToDto(Comment comment) {
+        return new CommentDto(
+                comment.getId(),
+                comment.getPost().getId(),
+                comment.getAuthor().getId(),
+                comment.getAuthor().getHandle(),
+                comment.getContent()
+        );
     }
 }
