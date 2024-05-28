@@ -18,7 +18,7 @@ import java.time.LocalDate;
 
 @Component
 @AllArgsConstructor
-@Profile("de")
+@Profile("dev")
 public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;

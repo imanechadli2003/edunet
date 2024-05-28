@@ -2,7 +2,9 @@ package com.edunet.edunet.endpoint.management;
 
 
 import com.edunet.edunet.dto.RoleDto;
+import com.edunet.edunet.model.Branch;
 import com.edunet.edunet.security.ManagementService;
+import com.edunet.edunet.service.BranchService;
 import com.edunet.edunet.service.TopicService;
 import com.edunet.edunet.service.UserService;
 import lombok.AllArgsConstructor;
@@ -20,18 +22,36 @@ public class AdminController {
 
     private TopicService topicService;
 
+    private BranchService branchService;
+
     @PostMapping("/users/{id}/update-role")
     public void updateUserRole(@PathVariable long id, @RequestBody RoleDto role) {
         managementService.updateUserRole(id, role);
     }
 
     @DeleteMapping("/users/{id}")
-    public void adminDeleteUser(@PathVariable long id) {
+    public void deleteUser(@PathVariable long id) {
         this.userService.adminDeleteUser(id);
     }
 
     @DeleteMapping("/topics/{id}")
-    public void delete(@PathVariable int id) {
+    public void deleteTopic(@PathVariable int id) {
         this.topicService.adminDeleteTopic(id);
     }
+
+    @DeleteMapping("/branches/{id}")
+    public void deleteBranch(@PathVariable int id) {
+        this.branchService.delete(id);
+    }
+
+    @PostMapping("/branches")
+    public Branch addBranch(@RequestBody Branch branch) {
+        return this.branchService.addBranch(branch);
+    }
+    
+    @PutMapping("/branches/{id}")
+    public Branch updateBranch(@PathVariable int id, @RequestBody Branch branch) {
+        return this.branchService.update(id, branch);
+    }
+
 }
