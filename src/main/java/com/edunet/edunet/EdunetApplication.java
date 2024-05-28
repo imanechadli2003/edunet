@@ -13,4 +13,6 @@ public class EdunetApplication {
 		SpringApplication.run(EdunetApplication.class, args);
 	}
 
+
+
 }

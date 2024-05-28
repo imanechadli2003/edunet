@@ -7,6 +7,8 @@ import com.edunet.edunet.repository.*;
 import com.edunet.edunet.security.AuthenticationService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -166,9 +168,10 @@ public class UserService {
 
     public AuthToken getAuthenticatedUser() {
         long id = authService.getAuthenticatedUserId();
-        String handle = userRepository.findHandleById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("user"));
-        return new AuthToken(id, handle, null);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String handle = auth.getName();
+        String role = auth.getAuthorities().stream().toList().get(0).getAuthority();
+        return new AuthToken(id, handle, role, null);
     }
 
     public List<UserDto> search(String like, int page, int size) {
@@ -214,5 +217,9 @@ public class UserService {
     public PostDto createUserPublicPost(CreatePostDto data) {
         long id = authService.getAuthenticatedUserId();
         return postService.createPostForTopic("pu" + id, data);
+    }
+
+    public void adminDeleteUser(long id) {
+        this.userRepository.deleteById(id);
     }
 }

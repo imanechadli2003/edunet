@@ -233,4 +233,8 @@ public class TopicService {
                 .map(result -> new UserIdHandle((long) result[0], (String) result[1]))
                 .toList();
     }
+
+    public void adminDeleteTopic(int id) {
+        this.topicRepository.deleteById(id);
+    }
 }

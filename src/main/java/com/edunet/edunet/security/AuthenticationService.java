@@ -27,6 +27,7 @@ public class AuthenticationService {
         return new AuthToken(
                 ((AuthenticationImpl) auth).details().id(),
                 auth.getName(),
+                auth.getAuthorities().stream().toList().get(0).getAuthority(),
                 jwtToken
         );
     }
